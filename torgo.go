@@ -1,6 +1,7 @@
 /*========================================================================
 		Insion / email: insion@lihuashu.com
 ========================================================================*/
+//2012年3月3日 与原版beego同步更新代码 By Insion
 package torgo
 
 import (
@@ -53,13 +54,13 @@ func init() {
 		HttpPort = 80
 		AppName = "torgo"
 		RunMode = "prod" //default runmod
-		AutoRender = false
+		AutoRender = true
 		RecoverPanic = true
 		PprofOn = false
 		ViewsPath = "views"
 		SessionOn = false
 		SessionProvider = "memory"
-		SessionName = "torgosessionid"
+		SessionName = "torgosessionID"
 		SessionGCMaxLifetime = 3600
 		UseFcgi = false
 	} else {
@@ -106,7 +107,7 @@ func init() {
 			SessionProvider = ar
 		}
 		if ar := AppConfig.String("sessionname"); ar == "" {
-			SessionName = "torgosessionid"
+			SessionName = "torgosessionID"
 		} else {
 			SessionName = ar
 		}
@@ -170,7 +171,7 @@ func (app *App) FilterParam(param string, filter http.HandlerFunc) *App {
 }
 
 func (app *App) FilterPrefixPath(path string, filter http.HandlerFunc) *App {
-	app.Handlers.FilterParam(path, filter)
+	app.Handlers.FilterPrefixPath(path, filter)
 	return app
 }
 
@@ -208,7 +209,7 @@ func FilterParam(param string, filter http.HandlerFunc) *App {
 }
 
 func FilterPrefixPath(path string, filter http.HandlerFunc) *App {
-	TorApp.FilterParam(path, filter)
+	TorApp.FilterPrefixPath(path, filter)
 	return TorApp
 }
 

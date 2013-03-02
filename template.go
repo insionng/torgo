@@ -1,12 +1,9 @@
-/*========================================================================
-		Insion / email: insion@lihuashu.com
-========================================================================*/
 package torgo
 
+//2012年3月3日 与原版beego同步更新代码 By Insion
 //@todo add template funcs
 
 import (
-	//"fmt"
 	"errors"
 	"fmt"
 	"github.com/russross/blackfriday"
@@ -91,8 +88,8 @@ func Compare(a, b interface{}) (equal bool) {
 // AddFuncMap let user to register a func in the template
 func AddFuncMap(key string, funname interface{}) error {
 	if _, ok := torgoTplFuncMap[key]; ok {
-		torgoTplFuncMap[key] = funname
-		return nil
+		return errors.New("funcmap already has the key")
 	}
-	return errors.New("funcmap already has the key")
+	torgoTplFuncMap[key] = funname
+	return nil
 }
