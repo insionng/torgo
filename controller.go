@@ -3,7 +3,7 @@ package torgo
 /*========================================================================
 		Insion / email: insion@lihuashu.com
 ========================================================================*/
-//v0.5
+//v0.6
 
 import (
 	"bytes"
@@ -49,6 +49,8 @@ func (c *Controller) Init(ctx *Context, cn string) {
 	c.Data = make(map[interface{}]interface{})
 	c.Tpl = template.New(cn + ctx.Request.Method)
 	c.Tpl = c.Tpl.Funcs(torgoTplFuncMap)
+	c.Statictpl = template.New(cn + ctx.Request.Method)
+	c.Statictpl = c.Statictpl.Funcs(torgoTplFuncMap)
 	c.Layout = ""
 	c.TplNames = ""
 	c.ChildName = cn
