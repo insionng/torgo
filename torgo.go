@@ -1,9 +1,10 @@
+package torgo
+
 /*========================================================================
 		Insion / email: insion@lihuashu.com
 ========================================================================*/
 //2012年3月3日 与原版beego同步更新代码 By Insion
-package torgo
-
+// v0.5
 import (
 	"fmt"
 	"github.com/astaxie/session"

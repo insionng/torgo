@@ -1,6 +1,7 @@
 package torgo
 
 //2012年3月3日 与原版beego同步更新代码 By Insion
+//v 0.5
 //@todo add template funcs
 
 import (

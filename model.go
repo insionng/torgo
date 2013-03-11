@@ -1,7 +1,9 @@
+package torgo
+
 /*========================================================================
 		Insion / email: insion@lihuashu.com
 ========================================================================*/
-package torgo
+//v 0.5
 
 type TorModel struct {
 	driver string
