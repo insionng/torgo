@@ -1,10 +1,5 @@
 package torgo
 
-/*========================================================================
-		Insion / email: insion@lihuashu.com
-========================================================================*/
-//v0.6
-
 import (
 	"fmt"
 	"github.com/astaxie/session"
@@ -17,6 +12,8 @@ import (
 	"path"
 	"strconv"
 )
+
+const VERSION = "0.0.3"
 
 var (
 	TorApp        *App
@@ -55,19 +52,19 @@ func init() {
 		HttpPort = 80
 		AppName = "torgo"
 		RunMode = "prod" //default runmod
-		AutoRender = true
+		AutoRender = false
 		RecoverPanic = true
 		PprofOn = false
 		ViewsPath = "views"
 		SessionOn = false
 		SessionProvider = "memory"
-		SessionName = "torgosessionID"
+		SessionName = "TorgoSessionId"
 		SessionGCMaxLifetime = 3600
 		UseFcgi = false
 	} else {
 		HttpAddr = AppConfig.String("httpaddr")
 		if v, err := AppConfig.Int("httpport"); err != nil {
-			HttpPort = 8080
+			HttpPort = 80
 		} else {
 			HttpPort = v
 		}
@@ -78,7 +75,7 @@ func init() {
 			RunMode = "prod"
 		}
 		if ar, err := AppConfig.Bool("autorender"); err != nil {
-			AutoRender = true
+			AutoRender = false
 		} else {
 			AutoRender = ar
 		}
@@ -108,7 +105,7 @@ func init() {
 			SessionProvider = ar
 		}
 		if ar := AppConfig.String("sessionname"); ar == "" {
-			SessionName = "torgosessionID"
+			SessionName = "TorgoSessionId"
 		} else {
 			SessionName = ar
 		}
@@ -129,12 +126,12 @@ func init() {
 }
 
 type App struct {
-	Handlers *ControllerRegistor
+	Handlers *HandlerRegistor
 }
 
 // New returns a new PatternServeMux.
 func NewApp() *App {
-	cr := NewControllerRegistor()
+	cr := NewHandlerRegistor()
 	app := &App{Handlers: cr}
 	return app
 }
@@ -156,7 +153,7 @@ func (app *App) Run() {
 	}
 }
 
-func (app *App) RegisterController(path string, c ControllerInterface) *App {
+func (app *App) RegisterHandler(path string, c HandlerInterface) *App {
 	app.Handlers.Add(path, c)
 	return app
 }
@@ -194,8 +191,8 @@ func (app *App) AccessLog(ctx *Context) {
 	BeeLogger.Printf("[ACC] host: '%s', request: '%s %s', proto: '%s', ua: %s'', remote: '%s'\n", ctx.Request.Host, ctx.Request.Method, ctx.Request.URL.Path, ctx.Request.Proto, ctx.Request.UserAgent(), ctx.Request.RemoteAddr)
 }
 
-func RegisterController(path string, c ControllerInterface) *App {
-	TorApp.RegisterController(path, c)
+func RegisterHandler(path string, c HandlerInterface) *App {
+	TorApp.RegisterHandler(path, c)
 	return TorApp
 }
 
@@ -216,12 +213,13 @@ func FilterPrefixPath(path string, filter http.HandlerFunc) *App {
 
 func Run() {
 	if PprofOn {
-		TorApp.RegisterController(`/debug/pprof`, &ProfController{})
-		TorApp.RegisterController(`/debug/pprof/:pp([\w]+)`, &ProfController{})
+		TorApp.RegisterHandler(`/debug/pprof`, &ProfHandler{})
+		TorApp.RegisterHandler(`/debug/pprof/:pp([\w]+)`, &ProfHandler{})
 	}
 	if SessionOn {
 		GlobalSessions, _ = session.NewManager(SessionProvider, SessionName, SessionGCMaxLifetime)
 		go GlobalSessions.GC()
 	}
+	BuildTemplate(ViewsPath)
 	TorApp.Run()
 }

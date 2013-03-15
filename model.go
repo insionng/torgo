@@ -1,41 +1,36 @@
 package torgo
 
-/*========================================================================
-		Insion / email: insion@lihuashu.com
-========================================================================*/
-//v0.6
-
-type TorModel struct {
+type BeeModel struct {
 	driver string
 }
 
-func (this *TorModel) Insert() {
+func (this *BeeModel) Insert() {
 
 }
 
-func (this *TorModel) MultipleInsert() {
+func (this *BeeModel) MultipleInsert() {
 
 }
 
-func (this *TorModel) Update() {
+func (this *BeeModel) Update() {
 
 }
 
-func (this *TorModel) Query() {
+func (this *BeeModel) Query() {
 
 }
 
 //Deletes from table with clauses where and using.
-func (this *TorModel) Delete() {
+func (this *BeeModel) Delete() {
 
 }
 
 //Start a transaction
-func (this *TorModel) Transaction() {
+func (this *BeeModel) Transaction() {
 
 }
 
 //commit transaction
-func (this *TorModel) Commit() {
+func (this *BeeModel) Commit() {
 
 }

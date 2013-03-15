@@ -1,10 +1,5 @@
 package torgo
 
-/*========================================================================
-		Insion / email: insion@lihuashu.com
-========================================================================*/
-//v0.6
-
 //@todo add template funcs
 
 import (
@@ -12,19 +7,29 @@ import (
 	"fmt"
 	"github.com/russross/blackfriday"
 	"html/template"
+	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
-var torgoTplFuncMap template.FuncMap
+var (
+	torgoTplFuncMap template.FuncMap
+	BeeTemplates    map[string]*template.Template
+	BeeTemplateExt  []string
+)
 
 func init() {
+	BeeTemplates = make(map[string]*template.Template)
 	torgoTplFuncMap = make(template.FuncMap)
+	BeeTemplateExt = make([]string, 0)
+	BeeTemplateExt = append(BeeTemplateExt, "tpl", "html")
 	torgoTplFuncMap["markdown"] = MarkDown
 	torgoTplFuncMap["dateformat"] = DateFormat
 	torgoTplFuncMap["date"] = Date
 	torgoTplFuncMap["compare"] = Compare
-	torgoTplFuncMap["cutstr"] = Cutstr
+	torgoTplFuncMap["substr"] = Substr
 }
 
 // MarkDown parses a string in MarkDown format and returns HTML. Used by the template parser as "markdown"
@@ -33,6 +38,20 @@ func MarkDown(raw string) (output template.HTML) {
 	bOutput := blackfriday.MarkdownBasic(input)
 	output = template.HTML(string(bOutput))
 	return
+}
+
+func Substr(s string, start, length int) string {
+	bt := []rune(s)
+	if start < 0 {
+		start = 0
+	}
+	var end int
+	if (start + length) > (len(bt) - 1) {
+		end = len(bt) - 1
+	} else {
+		end = start + length
+	}
+	return string(bt[start:end])
 }
 
 // DateFormat takes a time and a layout string and returns a string with the formatted date. Used by the template parser as "dateformat"
@@ -90,42 +109,76 @@ func Compare(a, b interface{}) (equal bool) {
 	return
 }
 
-//截取字符
-func Cutstr(str string, start, length int) string {
-	rs := []rune(str)
-	rl := len(rs)
-	end := 0
-
-	if start < 0 {
-		start = rl - 1 + start
-	}
-	end = start + length
-
-	if start > end {
-		start, end = end, start
-	}
-
-	if start < 0 {
-		start = 0
-	}
-	if start > rl {
-		start = rl
-	}
-	if end < 0 {
-		end = 0
-	}
-	if end > rl {
-		end = rl
-	}
-
-	return string(rs[start:end])
-}
-
 // AddFuncMap let user to register a func in the template
 func AddFuncMap(key string, funname interface{}) error {
 	if _, ok := torgoTplFuncMap[key]; ok {
 		return errors.New("funcmap already has the key")
 	}
 	torgoTplFuncMap[key] = funname
+	return nil
+}
+
+type templatefile struct {
+	root  string
+	files map[string][]string
+}
+
+func (self *templatefile) visit(paths string, f os.FileInfo, err error) error {
+	if f == nil {
+		return err
+	}
+	if f.IsDir() {
+		return nil
+	} else if (f.Mode() & os.ModeSymlink) > 0 {
+		return nil
+	} else {
+		hasExt := false
+		for _, v := range BeeTemplateExt {
+			if strings.HasSuffix(paths, v) {
+				hasExt = true
+				break
+			}
+		}
+		if hasExt {
+			a := []byte(paths)
+			a = a[len([]byte(self.root)):]
+			subdir := path.Dir(strings.TrimLeft(string(a), "/"))
+			if _, ok := self.files[subdir]; ok {
+				self.files[subdir] = append(self.files[subdir], paths)
+			} else {
+				m := make([]string, 1)
+				m[0] = paths
+				self.files[subdir] = m
+			}
+
+		}
+	}
+	return nil
+}
+
+func AddTemplateExt(ext string) {
+	for _, v := range BeeTemplateExt {
+		if v == ext {
+			return
+		}
+	}
+	BeeTemplateExt = append(BeeTemplateExt, ext)
+}
+
+func BuildTemplate(dir string) error {
+	self := templatefile{
+		root:  dir,
+		files: make(map[string][]string),
+	}
+	err := filepath.Walk(dir, func(path string, f os.FileInfo, err error) error {
+		return self.visit(path, f, err)
+	})
+	if err != nil {
+		fmt.Printf("filepath.Walk() returned %v\n", err)
+		return err
+	}
+	for k, v := range self.files {
+		BeeTemplates[k] = template.Must(template.New("torgoTemplate" + k).Funcs(torgoTplFuncMap).ParseFiles(v...))
+	}
 	return nil
 }
