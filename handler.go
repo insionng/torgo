@@ -82,6 +82,11 @@ func (c *Handler) Options() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
 }
 
+func (c *Handler) Context(ssname string, value interface{}) {
+	ss := c.StartSession()
+	ss.Set(ssname, value)
+}
+
 func (c *Handler) Render() error {
 	rb, err := c.RenderBytes()
 
