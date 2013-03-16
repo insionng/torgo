@@ -98,7 +98,7 @@ func (c *Handler) GetSession(name string) interface{} {
 
 func (c *Handler) DelSession(name string) {
 	ss := c.StartSession()
-	return ss.Delete(name)
+	ss.Delete(name)
 }
 
 func (c *Handler) Render() error {
