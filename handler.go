@@ -93,7 +93,7 @@ func (c *Handler) SetSession(name string, value interface{}) {
 
 func (c *Handler) GetSession(name string) interface{} {
 	ss := c.StartSession()
-	return name, ss.Get(name)
+	return ss.Get(name)
 }
 
 func (c *Handler) Render() error {
