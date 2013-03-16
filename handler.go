@@ -96,6 +96,11 @@ func (c *Handler) GetSession(name string) interface{} {
 	return ss.Get(name)
 }
 
+func (c *Handler) DelSession(name string) {
+	ss := c.StartSession()
+	return ss.Delete(name)
+}
+
 func (c *Handler) Render() error {
 	rb, err := c.RenderBytes()
 
