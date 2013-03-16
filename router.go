@@ -10,9 +10,9 @@ import (
 )
 
 type handlerInfo struct {
-	pattern        string
-	regex          *regexp.Regexp
-	params         map[int]string
+	pattern     string
+	regex       *regexp.Regexp
+	params      map[int]string
 	handlerType reflect.Type
 }
 

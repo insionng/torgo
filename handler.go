@@ -82,10 +82,6 @@ func (c *Handler) Options() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
 }
 
-func (c *Handler) Context(name string, value interface{}) {
-	c.Data[name] = value
-}
-
 func (c *Handler) SetSession(name string, value interface{}) {
 	ss := c.StartSession()
 	ss.Set(name, value)
