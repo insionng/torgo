@@ -91,7 +91,7 @@ func (c *Handler) SetSession(name string, value interface{}) {
 	ss.Set(name, value)
 }
 
-func (c *Handler) GetSession(name string) (string, interface{}) {
+func (c *Handler) GetSession(name string) interface{} {
 	ss := c.StartSession()
 	return name, ss.Get(name)
 }
