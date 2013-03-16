@@ -225,7 +225,7 @@ if you don't set TplNames,torgo will find like this:
 
 	c.TplNames = c.ChildName + "/" + c.Ctx.Request.Method + "." + c.TplExt
 
-So if the ChildName="AddHandler",Request Method= "POST",default TplEXT="tpl"	
+So if the ChildName="AddHandler",Request Method= "POST",default TplEXT="html"	
 So torgo will file the file in the path:`/view/AddHandler/POST.tpl`
 
 ### autoRender
