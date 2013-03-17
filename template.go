@@ -129,26 +129,39 @@ func Date(t time.Time, format string) (datestring string) {
 }
 
 //比较函数
-func Compare(a interface{}, operate string, b interface{}) bool {
+func Compare(a interface{}, operate string, b interface{}) (bl bool) {
+	bl = false
 	if operate == "==" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
 	if operate == "<" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) < strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) < strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
 	if operate == "<=" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) <= strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) <= strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
 	if operate == ">" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) > strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) > strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
 	if operate == ">=" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) >= strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) >= strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
 	if operate == "!=" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) != strings.TrimSpace(fmt.Sprintf("%v", b))
+		if strings.TrimSpace(fmt.Sprintf("%v", a)) != strings.TrimSpace(fmt.Sprintf("%v", b)) {
+			bl = true
+		}
 	}
-	return false
+	return
 }
 
 // AddFuncMap let user to register a func in the template
