@@ -128,14 +128,24 @@ func Date(t time.Time, format string) (datestring string) {
 	return
 }
 
-// Compare is a quick and dirty comparison function. It will convert whatever you give it to strings and see if the two values are equal.
-// Whitespace is trimmed. Used by the template parser as "eq"
-func Compare(a, b interface{}) (equal bool) {
-	equal = false
-	if strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b)) {
-		equal = true
+//比较函数
+func Compare(a interface{}, operate string, b interface{}) bool {
+	if operate == "<" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) < strings.TrimSpace(fmt.Sprintf("%v", b))
 	}
-	return
+	if operate == "<=" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) <= strings.TrimSpace(fmt.Sprintf("%v", b))
+	}
+	if operate == ">" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) > strings.TrimSpace(fmt.Sprintf("%v", b))
+	}
+	if operate == ">=" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
+	}
+	if operate == "!=" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) != strings.TrimSpace(fmt.Sprintf("%v", b))
+	}
+	return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
 }
 
 // AddFuncMap let user to register a func in the template
