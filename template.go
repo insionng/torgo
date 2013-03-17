@@ -130,6 +130,9 @@ func Date(t time.Time, format string) (datestring string) {
 
 //比较函数
 func Compare(a interface{}, operate string, b interface{}) bool {
+	if operate == "==" {
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
+	}
 	if operate == "<" {
 		return strings.TrimSpace(fmt.Sprintf("%v", a)) < strings.TrimSpace(fmt.Sprintf("%v", b))
 	}
@@ -140,12 +143,12 @@ func Compare(a interface{}, operate string, b interface{}) bool {
 		return strings.TrimSpace(fmt.Sprintf("%v", a)) > strings.TrimSpace(fmt.Sprintf("%v", b))
 	}
 	if operate == ">=" {
-		return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
+		return strings.TrimSpace(fmt.Sprintf("%v", a)) >= strings.TrimSpace(fmt.Sprintf("%v", b))
 	}
 	if operate == "!=" {
 		return strings.TrimSpace(fmt.Sprintf("%v", a)) != strings.TrimSpace(fmt.Sprintf("%v", b))
 	}
-	return strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b))
+	return false
 }
 
 // AddFuncMap let user to register a func in the template
