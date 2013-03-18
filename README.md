@@ -338,7 +338,7 @@ torgo has many default variables, as follow is a list to show:
 
 - ViewsPath    string
 
-	the template path, default is /views
+	the template path, default is ./views
 
 - RunMode      string //"dev" or "prod"
 

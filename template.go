@@ -32,6 +32,9 @@ func init() {
 	torgoTplFuncMap["compare"] = Compare
 	torgoTplFuncMap["substr"] = Substr
 	torgoTplFuncMap["html2str"] = Html2str
+	torgoTplFuncMap["str2html"] = Str2html
+	torgoTplFuncMap["htmlquote"] = Htmlquote
+	torgoTplFuncMap["htmlunquote"] = Htmlunquote
 }
 
 // MarkDown parses a string in MarkDown format and returns HTML. Used by the template parser as "markdown"
@@ -83,6 +86,56 @@ func Html2str(html string) string {
 	return strings.TrimSpace(src)
 }
 
+func Str2html(raw string) template.HTML {
+	return template.HTML(raw)
+}
+
+func Htmlquote(src string) string {
+	//HTML编码为实体符号
+	/*
+	   Encodes `text` for raw use in HTML.
+	       >>> htmlquote("<'&\\">")
+	       '&lt;&#39;&amp;&quot;&gt;'
+	*/
+
+	text := string(src)
+
+	text = strings.Replace(text, "&", "&amp;", -1) // Must be done first!
+	text = strings.Replace(text, "<", "&lt;", -1)
+	text = strings.Replace(text, ">", "&gt;", -1)
+	text = strings.Replace(text, "'", "&#39;", -1)
+	text = strings.Replace(text, "\"", "&quot;", -1)
+	text = strings.Replace(text, "“", "&ldquo;", -1)
+	text = strings.Replace(text, "”", "&rdquo;", -1)
+	text = strings.Replace(text, " ", "&nbsp;", -1)
+
+	return strings.TrimSpace(text)
+}
+
+func Htmlunquote(src string) string {
+	//实体符号解释为HTML
+	/*
+	   Decodes `text` that's HTML quoted.
+	       >>> htmlunquote('&lt;&#39;&amp;&quot;&gt;')
+	       '<\\'&">'
+	*/
+
+	// strings.Replace(s, old, new, n)
+	// 在s字符串中，把old字符串替换为new字符串，n表示替换的次数，小于0表示全部替换
+
+	text := string(src)
+	text = strings.Replace(text, "&nbsp;", " ", -1)
+	text = strings.Replace(text, "&rdquo;", "”", -1)
+	text = strings.Replace(text, "&ldquo;", "“", -1)
+	text = strings.Replace(text, "&quot;", "\"", -1)
+	text = strings.Replace(text, "&#39;", "'", -1)
+	text = strings.Replace(text, "&gt;", ">", -1)
+	text = strings.Replace(text, "&lt;", "<", -1)
+	text = strings.Replace(text, "&amp;", "&", -1) // Must be done last!
+
+	return strings.TrimSpace(text)
+}
+
 // DateFormat takes a time and a layout string and returns a string with the formatted date. Used by the template parser as "dateformat"
 func DateFormat(t time.Time, layout string) (datestring string) {
 	datestring = t.Format(layout)
@@ -128,38 +181,12 @@ func Date(t time.Time, format string) (datestring string) {
 	return
 }
 
-//比较函数
-func Compare(a interface{}, operate string, b interface{}) (bl bool) {
-	bl = false
-	if operate == "==" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
-	}
-	if operate == "<" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) < strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
-	}
-	if operate == "<=" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) <= strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
-	}
-	if operate == ">" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) > strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
-	}
-	if operate == ">=" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) >= strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
-	}
-	if operate == "!=" {
-		if strings.TrimSpace(fmt.Sprintf("%v", a)) != strings.TrimSpace(fmt.Sprintf("%v", b)) {
-			bl = true
-		}
+// Compare is a quick and dirty comparison function. It will convert whatever you give it to strings and see if the two values are equal.
+// Whitespace is trimmed. Used by the template parser as "eq"
+func Compare(a, b interface{}) (equal bool) {
+	equal = false
+	if strings.TrimSpace(fmt.Sprintf("%v", a)) == strings.TrimSpace(fmt.Sprintf("%v", b)) {
+		equal = true
 	}
 	return
 }
