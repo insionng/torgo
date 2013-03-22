@@ -229,11 +229,11 @@ So if the ChildName="AddHandler",Request Method= "POST",default TplEXT="html"
 So torgo will file the file in the path:`/view/AddHandler/POST.tpl`
 
 ### autoRender
-In the handler you needn't to call render function. torgo will auto call this function after HTTP Method Call.
+In the handler you need to call render function. torgo will not auto call this function after HTTP Method Call.
 
-You can disable automatic invokation of autorender via the AutoRender Flag:
+You can enable automatic invokation of autorender via the AutoRender Flag:
 ```go
-torgo.AutoRender = false
+torgo.AutoRender = true
 ```
 
 ### layout
