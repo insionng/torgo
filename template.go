@@ -249,6 +249,13 @@ func AddTemplateExt(ext string) {
 }
 
 func BuildTemplate(dir string) error {
+	if _, err := os.Stat(dir); err != nil {
+		if os.IsNotExist(err) {
+			return err
+		} else {
+			return errors.New("dir open err")
+		}
+	}
 	self := templatefile{
 		root:  dir,
 		files: make(map[string][]string),

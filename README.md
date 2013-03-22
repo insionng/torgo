@@ -1,7 +1,7 @@
 ## Torgo version 0.7
 =======
 
-Torgo是一个与python的Tornado web框架相似的轻量级Golang Web框架，基于beego基础上增加各种功能
+Torgo是一个与python的Tornado web框架相似的轻量级Golang Web框架，基于torgo基础上增加各种功能
 
 
 ##licensed
@@ -14,18 +14,18 @@ Torgo is licensed under the BSD Licence
     go get github.com/insionng/torgo
 
 
-## Base on Beego
+## Base on Torgo
 ============
 增加了开发需要的一些辅助功能和特性，譬如:
 输出html文档RanderString函数
-控制器由Controller改为Handler，以符合从Python Tornado 转到Golang的用户使用习惯
+控制器由Handler改为Handler，以符合从Python Tornado 转到Golang的用户使用习惯
 
 调整优化了一些默认参数等等：
-譬如默认的http服务端口不再是beego的8080 而直接是80,以方便本地调试
+譬如默认的http服务端口不再是torgo的8080 而直接是80,以方便本地调试
 AutoRender自动渲染默认是false 以灵活控制渲染
 增加一些模版函数
 
-以下文档援引自beego，略作修改拿来展示我这个山寨版Beego和正版Beego的细节上的区别:)
+以下文档援引自torgo，略作修改拿来展示我这个山寨版Torgo和正版Torgo的细节上的区别:)
 
 
 ## Quick Start
@@ -47,7 +47,7 @@ func (self *MainHandler) Get() {
 }
 
 func main() {
-	torgo.RegisterHandler("/", &MainHandler{})
+	torgo.Route("/", &MainHandler{})
 	//torgo.HttpPort = 80 // default
 	torgo.Run()
 }
@@ -63,16 +63,16 @@ A more complete example use of torgo exists here:[toropress](https://github.com/
 ============
 In torgo, a route is a struct paired with a URL-matching pattern. The struct has many method with the same name of http method to serve the http response. Each route is associated with a block.
 ```go
-torgo.RegisterHandler("/", &handlers.MainHandler{})
-torgo.RegisterHandler("/admin", &admin.UserHandler{})
-torgo.RegisterHandler("/admin/index", &admin.ArticleHandler{})
-torgo.RegisterHandler("/admin/addpkg", &admin.AddHandler{})
+torgo.Route("/", &handlers.MainHandler{})
+torgo.Route("/admin", &admin.UserHandler{})
+torgo.Route("/admin/index", &admin.ArticleHandler{})
+torgo.Route("/admin/addpkg", &admin.AddHandler{})
 ```
 You can specify custom regular expressions for routes:
 ```go
-torgo.RegisterHandler("/admin/editpkg/:id([0-9]+)", &admin.EditHandler{})
-torgo.RegisterHandler("/admin/delpkg/:id([0-9]+)", &admin.DelHandler{})
-torgo.RegisterHandler("/:pkg(.*)", &handlers.MainHandler{})
+torgo.Route("/admin/editpkg/:id([0-9]+)", &admin.EditHandler{})
+torgo.Route("/admin/delpkg/:id([0-9]+)", &admin.DelHandler{})
+torgo.Route("/:pkg(.*)", &handlers.MainHandler{})
 ```	
 You can also create routes for static files:
 
@@ -96,7 +96,7 @@ torgo.Filter(FilterUser)
 ```	
 You can also apply filters only when certain REST URL Parameters exist:
 ```go
-torgo.RegisterHandler("/:id([0-9]+)", &admin.EditHandler{})
+torgo.Route("/:id([0-9]+)", &admin.EditHandler{})
 torgo.FilterParam("id", func(rw http.ResponseWriter, r *http.Request) {
     ...
 })
