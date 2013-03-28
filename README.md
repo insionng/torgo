@@ -233,7 +233,7 @@ In the handler you need to call render function. torgo will not auto call this f
 
 You can enable automatic invokation of autorender via the AutoRender Flag:
 ```go
-torgo.AutoRender = true
+torgo.AutoRender = false
 ```
 
 ### layout

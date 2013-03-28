@@ -59,8 +59,8 @@ func Substr(s string, start, length int) string {
 	return string(bt[start:end])
 }
 
+// Html2str() returns escaping text convert from html
 func Html2str(html string) string {
-
 	src := string(html)
 
 	//将HTML标签全转换成小写
