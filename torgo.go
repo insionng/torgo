@@ -13,7 +13,7 @@ import (
 	"strconv"
 )
 
-const VERSION = "0.7.6"
+const VERSION = "0.7.7"
 
 var (
 	TorApp        *App
@@ -153,7 +153,7 @@ func (app *App) Run() {
 	}
 }
 
-func (app *App) Route(path string, c HandlerInterface) *App {
+func (app *App) Router(path string, c HandlerInterface) *App {
 	app.Handlers.Add(path, c)
 	return app
 }
@@ -192,7 +192,12 @@ func (app *App) AccessLog(ctx *Context) {
 }
 
 func Route(path string, c HandlerInterface) *App {
-	TorApp.Route(path, c)
+	TorApp.Router(path, c)
+	return TorApp
+}
+
+func Router(path string, c HandlerInterface) *App {
+	TorApp.Router(path, c)
 	return TorApp
 }
 
@@ -213,8 +218,8 @@ func FilterPrefixPath(path string, filter http.HandlerFunc) *App {
 
 func Run() {
 	if PprofOn {
-		TorApp.Route(`/debug/pprof`, &ProfHandler{})
-		TorApp.Route(`/debug/pprof/:pp([\w]+)`, &ProfHandler{})
+		TorApp.Router(`/debug/pprof`, &ProfHandler{})
+		TorApp.Router(`/debug/pprof/:pp([\w]+)`, &ProfHandler{})
 	}
 	if SessionOn {
 		GlobalSessions, _ = session.NewManager(SessionProvider, SessionName, SessionGCMaxLifetime)

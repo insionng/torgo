@@ -118,30 +118,22 @@ func (c *Handler) RenderString() (string, error) {
 
 func (c *Handler) RenderBytes() ([]byte, error) {
 	//if the handler has set layout, then first get the tplname's content set the content to the layout
-	var t *template.Template
-	var err error
 	if c.Layout != "" {
 		if c.TplNames == "" {
 			c.TplNames = c.ChildName + "/" + c.Ctx.Request.Method + "." + c.TplExt
 		}
 		if RunMode == "dev" {
-			t, err = template.New("torgoTemplate").Funcs(torgoTplFuncMap).ParseFiles(path.Join(ViewsPath, c.TplNames), path.Join(ViewsPath, c.Layout))
-			if err != nil {
-				Trace("template ParseFiles err:", err)
-			}
-		} else {
-			subdir := path.Dir(c.TplNames)
-			t = BeeTemplates[subdir]
+			BuildTemplate(ViewsPath)
 		}
+		subdir := path.Dir(c.TplNames)
 		_, file := path.Split(c.TplNames)
-
 		newbytes := bytes.NewBufferString("")
-		t.ExecuteTemplate(newbytes, file, c.Data)
+		BeeTemplates[subdir].ExecuteTemplate(newbytes, file, c.Data)
 		tplcontent, _ := ioutil.ReadAll(newbytes)
 		c.Data["LayoutContent"] = template.HTML(string(tplcontent))
 		_, file = path.Split(c.Layout)
 		ibytes := bytes.NewBufferString("")
-		err := t.ExecuteTemplate(ibytes, file, c.Data)
+		err := BeeTemplates[subdir].ExecuteTemplate(ibytes, file, c.Data)
 		if err != nil {
 			Trace("template Execute err:", err)
 		}
@@ -152,17 +144,12 @@ func (c *Handler) RenderBytes() ([]byte, error) {
 			c.TplNames = c.ChildName + "/" + c.Ctx.Request.Method + "." + c.TplExt
 		}
 		if RunMode == "dev" {
-			t, err = template.New("torgoTemplate").Funcs(torgoTplFuncMap).ParseFiles(path.Join(ViewsPath, c.TplNames))
-			if err != nil {
-				Trace("template ParseFiles err:", err)
-			}
-		} else {
-			subdir := path.Dir(c.TplNames)
-			t = BeeTemplates[subdir]
+			BuildTemplate(ViewsPath)
 		}
+		subdir := path.Dir(c.TplNames)
 		_, file := path.Split(c.TplNames)
 		ibytes := bytes.NewBufferString("")
-		err := t.ExecuteTemplate(ibytes, file, c.Data)
+		err := BeeTemplates[subdir].ExecuteTemplate(ibytes, file, c.Data)
 		if err != nil {
 			Trace("template Execute err:", err)
 		}
