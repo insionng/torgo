@@ -47,7 +47,7 @@ func (self *MainHandler) Get() {
 }
 
 func main() {
-	torgo.Route("/", &MainHandler{})
+	torgo.Router("/", &MainHandler{})
 	//torgo.HttpPort = 80 // default
 	torgo.Run()
 }
@@ -63,16 +63,16 @@ A more complete example use of torgo exists here:[toropress](https://github.com/
 ============
 In torgo, a route is a struct paired with a URL-matching pattern. The struct has many method with the same name of http method to serve the http response. Each route is associated with a block.
 ```go
-torgo.Route("/", &handlers.MainHandler{})
-torgo.Route("/admin", &admin.UserHandler{})
-torgo.Route("/admin/index", &admin.ArticleHandler{})
-torgo.Route("/admin/addpkg", &admin.AddHandler{})
+torgo.Router("/", &handlers.MainHandler{})
+torgo.Router("/admin", &admin.UserHandler{})
+torgo.Router("/admin/index", &admin.ArticleHandler{})
+torgo.Router("/admin/addpkg", &admin.AddHandler{})
 ```
 You can specify custom regular expressions for routes:
 ```go
-torgo.Route("/admin/editpkg/:id([0-9]+)", &admin.EditHandler{})
-torgo.Route("/admin/delpkg/:id([0-9]+)", &admin.DelHandler{})
-torgo.Route("/:pkg(.*)", &handlers.MainHandler{})
+torgo.Router("/admin/editpkg/:id([0-9]+)", &admin.EditHandler{})
+torgo.Router("/admin/delpkg/:id([0-9]+)", &admin.DelHandler{})
+torgo.Router("/:pkg(.*)", &handlers.MainHandler{})
 ```	
 You can also create routes for static files:
 
@@ -96,7 +96,7 @@ torgo.Filter(FilterUser)
 ```	
 You can also apply filters only when certain REST URL Parameters exist:
 ```go
-torgo.Route("/:id([0-9]+)", &admin.EditHandler{})
+torgo.Router("/:id([0-9]+)", &admin.EditHandler{})
 torgo.FilterParam("id", func(rw http.ResponseWriter, r *http.Request) {
     ...
 })
