@@ -16,14 +16,22 @@ type handlerInfo struct {
 	handlerType reflect.Type
 }
 
+type userHandler struct {
+	pattern string
+	regex   *regexp.Regexp
+	params  map[int]string
+	h       http.Handler
+}
+
 type HandlerRegistor struct {
-	routers    []*handlerInfo
-	fixrouters []*handlerInfo
-	filters    []http.HandlerFunc
+	routers      []*handlerInfo
+	fixrouters   []*handlerInfo
+	filters      []http.HandlerFunc
+	userHandlers map[string]*userHandler
 }
 
 func NewHandlerRegistor() *HandlerRegistor {
-	return &HandlerRegistor{routers: make([]*handlerInfo, 0)}
+	return &HandlerRegistor{routers: make([]*handlerInfo, 0), userHandlers: make(map[string]*userHandler)}
 }
 
 func (p *HandlerRegistor) Add(pattern string, c HandlerInterface) {
@@ -75,6 +83,52 @@ func (p *HandlerRegistor) Add(pattern string, c HandlerInterface) {
 		p.routers = append(p.routers, route)
 	}
 
+}
+
+func (p *HandlerRegistor) AddHandler(pattern string, c http.Handler) {
+	parts := strings.Split(pattern, "/")
+
+	j := 0
+	params := make(map[int]string)
+	for i, part := range parts {
+		if strings.HasPrefix(part, ":") {
+			expr := "([^/]+)"
+			//a user may choose to override the defult expression
+			// similar to expressjs: ‘/user/:id([0-9]+)’ 
+			if index := strings.Index(part, "("); index != -1 {
+				expr = part[index:]
+				part = part[:index]
+			}
+			params[j] = part
+			parts[i] = expr
+			j++
+		}
+	}
+	if j == 0 {
+		//now create the Route
+		uh := &userHandler{}
+		uh.pattern = pattern
+		uh.h = c
+		p.userHandlers[pattern] = uh
+	} else { // add regexp routers
+		//recreate the url pattern, with parameters replaced
+		//by regular expressions. then compile the regex
+		pattern = strings.Join(parts, "/")
+		regex, regexErr := regexp.Compile(pattern)
+		if regexErr != nil {
+			//TODO add error handling here to avoid panic
+			panic(regexErr)
+			return
+		}
+
+		//now create the Route
+		uh := &userHandler{}
+		uh.regex = regex
+		uh.params = params
+		uh.pattern = pattern
+		uh.h = c
+		p.userHandlers[pattern] = uh
+	}
 }
 
 // Filter adds the middleware filter.
@@ -142,6 +196,43 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	requestPath := r.URL.Path
+
+	//user defined Handler
+	for pattern, c := range p.userHandlers {
+		if c.regex == nil && pattern == requestPath {
+			c.h.ServeHTTP(rw, r)
+			return
+		} else if c.regex == nil {
+			continue
+		}
+
+		//check if Route pattern matches url
+		if !c.regex.MatchString(requestPath) {
+			continue
+		}
+
+		//get submatches (params)
+		matches := c.regex.FindStringSubmatch(requestPath)
+
+		//double check that the Route matches the URL pattern.
+		if len(matches[0]) != len(requestPath) {
+			continue
+		}
+
+		if len(c.params) > 0 {
+			//add url parameters to the query param map
+			values := r.URL.Query()
+			for i, match := range matches[1:] {
+				values.Add(c.params[i], match)
+				params[c.params[i]] = match
+			}
+			//reassemble query params and add to RawQuery
+			r.URL.RawQuery = url.Values(values).Encode() + "&" + r.URL.RawQuery
+			//r.URL.RawQuery = url.Values(values).Encode()
+		}
+		c.h.ServeHTTP(rw, r)
+		return
+	}
 
 	//first find path from the fixrouters to Improve Performance
 	for _, route := range p.fixrouters {

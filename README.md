@@ -1,4 +1,4 @@
-## Torgo version 0.7
+## Torgo version 0.8
 =======
 
 Torgo是一个与python的Tornado web框架相似的轻量级Golang Web框架，基于beego基础上增加各种功能

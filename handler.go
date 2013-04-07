@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"github.com/astaxie/session"
+	"./session"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -51,7 +51,6 @@ func (c *Handler) Prepare() {
 }
 
 func (c *Handler) Finish() {
-
 }
 
 func (c *Handler) Get() {
@@ -80,21 +79,6 @@ func (c *Handler) Patch() {
 
 func (c *Handler) Options() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
-}
-
-func (c *Handler) SetSession(name string, value interface{}) {
-	ss := c.StartSession()
-	ss.Set(name, value)
-}
-
-func (c *Handler) GetSession(name string) interface{} {
-	ss := c.StartSession()
-	return ss.Get(name)
-}
-
-func (c *Handler) DelSession(name string) {
-	ss := c.StartSession()
-	ss.Delete(name)
 }
 
 func (c *Handler) Render() error {
@@ -190,7 +174,25 @@ func (c *Handler) Input() url.Values {
 	return c.Ctx.Request.Form
 }
 
-func (c *Handler) StartSession() (sess session.Session) {
+func (c *Handler) StartSession() (sess session.SessionStore) {
 	sess = GlobalSessions.SessionStart(c.Ctx.ResponseWriter, c.Ctx.Request)
 	return
+}
+
+func (c *Handler) SetSession(name string, value interface{}) {
+	ss := c.StartSession()
+	defer ss.SessionRelease()
+	ss.Set(name, value)
+}
+
+func (c *Handler) GetSession(name string) interface{} {
+	ss := c.StartSession()
+	defer ss.SessionRelease()
+	return ss.Get(name)
+}
+
+func (c *Handler) DelSession(name string) {
+	ss := c.StartSession()
+	defer ss.SessionRelease()
+	ss.Delete(name)
 }
