@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"./session"
+	"github.com/insionng/torgo/session"
 	"html/template"
 	"io/ioutil"
 	"net/http"

@@ -1,8 +1,8 @@
 package torgo
 
 import (
-	"./session"
 	"fmt"
+	"github.com/insionng/torgo/session"
 	"html/template"
 	"net"
 	"net/http"
