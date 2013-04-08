@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-const VERSION = "0.8.0"
+const VERSION = "0.8.2"
 
 var (
 	TorApp        *App
