@@ -12,7 +12,7 @@ import (
 	"strconv"
 )
 
-const VERSION = "0.8.2"
+const VERSION = "0.8.5"
 
 var (
 	TorApp        *App
@@ -35,6 +35,7 @@ var (
 	SessionGCMaxLifetime int64  // session's gc maxlifetime
 	SessionSavePath      string // session savepath if use mysql/redis/file this set to the connectinfo
 	UseFcgi              bool
+	MaxMemory            int64
 
 	GlobalSessions *session.Manager //GlobalSessions
 )
@@ -62,12 +63,18 @@ func init() {
 		SessionGCMaxLifetime = 3600
 		SessionSavePath = ""
 		UseFcgi = false
+		MaxMemory = 1 << 26 //64MB
 	} else {
 		HttpAddr = AppConfig.String("httpaddr")
 		if v, err := AppConfig.Int("httpport"); err != nil {
 			HttpPort = 80
 		} else {
 			HttpPort = v
+		}
+		if v, err := AppConfig.Int64("maxmemory"); err != nil {
+			MaxMemory = 1 << 26
+		} else {
+			MaxMemory = v
 		}
 		AppName = AppConfig.String("appname")
 		if runmode := AppConfig.String("runmode"); runmode != "" {

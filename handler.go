@@ -7,10 +7,12 @@ import (
 	"github.com/insionng/torgo/session"
 	"html/template"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 )
 
 type Handler struct {
@@ -170,8 +172,29 @@ func (c *Handler) ServeXml() {
 }
 
 func (c *Handler) Input() url.Values {
-	c.Ctx.Request.ParseForm()
+	ct := c.Ctx.Request.Header.Get("Content-Type")
+	if strings.Contains(ct, "multipart/form-data") {
+		c.Ctx.Request.ParseMultipartForm(MaxMemory) //64MB
+	} else {
+		c.Ctx.Request.ParseForm()
+	}
 	return c.Ctx.Request.Form
+}
+
+func (c *Handler) GetString(key string) string {
+	return c.Input().Get(key)
+}
+
+func (c *Handler) GetInt(key string) (int64, error) {
+	return strconv.ParseInt(c.Input().Get(key), 10, 64)
+}
+
+func (c *Handler) GetBool(key string) (bool, error) {
+	return strconv.ParseBool(c.Input().Get(key))
+}
+
+func (c *Handler) GetFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	return c.Ctx.Request.FormFile(key)
 }
 
 func (c *Handler) StartSession() (sess session.SessionStore) {
