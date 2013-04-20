@@ -93,7 +93,7 @@ func (c *Handler) Options() {
 func (c *Handler) Render() error {
 	rb, err := c.RenderBytes()
 
-	return RenderCore(rb, err)
+	return c.RenderCore(rb, err)
 }
 
 func (c *Handler) RenderPlus(rb []byte) (err error) {
@@ -101,7 +101,7 @@ func (c *Handler) RenderPlus(rb []byte) (err error) {
 		rb, err = c.RenderBytes()
 	}
 
-	return RenderCore(rb, err)
+	return c.RenderCore(rb, err)
 }
 
 func (c *Handler) RenderCore(rb []byte, err error) error {
