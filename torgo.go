@@ -9,10 +9,11 @@ import (
 	"net/http/fcgi"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 )
 
-const VERSION = "0.8.5"
+const VERSION = "0.8.6"
 
 var (
 	TorApp        *App
@@ -24,23 +25,26 @@ var (
 	HttpPort      int
 	RecoverPanic  bool
 	AutoRender    bool
+	RenderPlus    bool
 	PprofOn       bool
 	ViewsPath     string
 	RunMode       string //"dev" or "prod"
 	AppConfig     *Config
-	//related to session 
+	//related to session
 	SessionOn            bool   // wheather auto start session,default is false
-	SessionProvider      string // default session provider  memory mysql redis 
+	SessionProvider      string // default session provider  memory mysql redis
 	SessionName          string // sessionName cookie's name
 	SessionGCMaxLifetime int64  // session's gc maxlifetime
 	SessionSavePath      string // session savepath if use mysql/redis/file this set to the connectinfo
 	UseFcgi              bool
 	MaxMemory            int64
+	EnableGzip           bool // enable gzip
 
 	GlobalSessions *session.Manager //GlobalSessions
 )
 
 func init() {
+	os.Chdir(path.Dir(os.Args[0]))
 	TorApp = NewApp()
 	AppPath, _ = os.Getwd()
 	StaticDir = make(map[string]string)
@@ -52,8 +56,9 @@ func init() {
 		HttpAddr = ""
 		HttpPort = 80
 		AppName = "torgo"
-		RunMode = "prod" //default runmod
+		RunMode = "dev" //default runmod
 		AutoRender = false
+		RenderPlus = false
 		RecoverPanic = true
 		PprofOn = false
 		ViewsPath = "views"
@@ -64,6 +69,7 @@ func init() {
 		SessionSavePath = ""
 		UseFcgi = false
 		MaxMemory = 1 << 26 //64MB
+		EnableGzip = false
 	} else {
 		HttpAddr = AppConfig.String("httpaddr")
 		if v, err := AppConfig.Int("httpport"); err != nil {
@@ -80,7 +86,12 @@ func init() {
 		if runmode := AppConfig.String("runmode"); runmode != "" {
 			RunMode = runmode
 		} else {
-			RunMode = "prod"
+			RunMode = "dev"
+		}
+		if ar, err := AppConfig.Bool("renderplus"); err != nil {
+			RenderPlus = false
+		} else {
+			RenderPlus = ar
 		}
 		if ar, err := AppConfig.Bool("autorender"); err != nil {
 			AutoRender = false
@@ -122,7 +133,7 @@ func init() {
 		} else {
 			SessionSavePath = ar
 		}
-		if ar, err := AppConfig.Int("sessiongcmaxlifetime"); err != nil && ar != 0 {
+		if ar, err := AppConfig.Int("sessiongcmaxlifetime"); err == nil && ar != 0 {
 			int64val, _ := strconv.ParseInt(strconv.Itoa(ar), 10, 64)
 			SessionGCMaxLifetime = int64val
 		} else {
@@ -132,6 +143,11 @@ func init() {
 			UseFcgi = false
 		} else {
 			UseFcgi = ar
+		}
+		if ar, err := AppConfig.Bool("enablegzip"); err != nil {
+			EnableGzip = false
+		} else {
+			EnableGzip = ar
 		}
 	}
 	StaticDir["/static"] = "static"
@@ -201,7 +217,7 @@ func (app *App) ErrorLog(ctx *Context) {
 }
 
 func (app *App) AccessLog(ctx *Context) {
-	BeeLogger.Printf("[ACC] host: '%s', request: '%s %s', proto: '%s', ua: %s'', remote: '%s'\n", ctx.Request.Host, ctx.Request.Method, ctx.Request.URL.Path, ctx.Request.Proto, ctx.Request.UserAgent(), ctx.Request.RemoteAddr)
+	BeeLogger.Printf("[ACC] host: '%s', request: '%s %s', proto: '%s', ua: '%s', remote: '%s'\n", ctx.Request.Host, ctx.Request.Method, ctx.Request.URL.Path, ctx.Request.Proto, ctx.Request.UserAgent(), ctx.Request.RemoteAddr)
 }
 
 func Route(path string, c HandlerInterface) *App {
@@ -216,6 +232,16 @@ func Router(path string, c HandlerInterface) *App {
 
 func RouterHandler(path string, c http.Handler) *App {
 	TorApp.Handlers.AddHandler(path, c)
+	return TorApp
+}
+
+func SetViewsPath(path string) *App {
+	TorApp.SetViewsPath(path)
+	return TorApp
+}
+
+func SetStaticPath(url string, path string) *App {
+	StaticDir[url] = path
 	return TorApp
 }
 
@@ -245,7 +271,10 @@ func Run() {
 	}
 	err := BuildTemplate(ViewsPath)
 	if err != nil {
-		Warn(err)
+		if RunMode == "dev" {
+			Warn(err)
+		}
 	}
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	TorApp.Run()
 }

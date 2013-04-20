@@ -2,14 +2,18 @@ package torgo
 
 import (
 	"bytes"
+	"compress/gzip"
+	"compress/zlib"
 	"encoding/json"
 	"encoding/xml"
 	"github.com/insionng/torgo/session"
 	"html/template"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -52,6 +56,9 @@ func (c *Handler) Prepare() {
 
 }
 
+func (c *Handler) RenderBefore() {
+}
+
 func (c *Handler) Finish() {
 }
 
@@ -89,9 +96,85 @@ func (c *Handler) Render() error {
 	if err != nil {
 		return err
 	} else {
-		c.Ctx.SetHeader("Content-Length", strconv.Itoa(len(rb)), true)
-		c.Ctx.ContentType("text/html")
-		c.Ctx.ResponseWriter.Write(rb)
+		c.Ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+		output_writer := c.Ctx.ResponseWriter.(io.Writer)
+		if EnableGzip == true && c.Ctx.Request.Header.Get("Accept-Encoding") != "" {
+			splitted := strings.SplitN(c.Ctx.Request.Header.Get("Accept-Encoding"), ",", -1)
+			encodings := make([]string, len(splitted))
+
+			for i, val := range splitted {
+				encodings[i] = strings.TrimSpace(val)
+			}
+			for _, val := range encodings {
+				if val == "gzip" {
+					c.Ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+					output_writer, _ = gzip.NewWriterLevel(c.Ctx.ResponseWriter, gzip.BestSpeed)
+
+					break
+				} else if val == "deflate" {
+					c.Ctx.ResponseWriter.Header().Set("Content-Encoding", "deflate")
+					output_writer, _ = zlib.NewWriterLevel(c.Ctx.ResponseWriter, zlib.BestSpeed)
+					break
+				}
+			}
+		} else {
+			c.Ctx.SetHeader("Content-Length", strconv.Itoa(len(rb)), true)
+		}
+		output_writer.Write(rb)
+		switch output_writer.(type) {
+		case *gzip.Writer:
+			output_writer.(*gzip.Writer).Close()
+		case *zlib.Writer:
+			output_writer.(*zlib.Writer).Close()
+		case io.WriteCloser:
+			output_writer.(io.WriteCloser).Close()
+		}
+		return nil
+	}
+	return nil
+}
+
+func (c *Handler) RenderPlus(rb []byte) (err error) {
+	if rb == nil {
+		rb, err = c.RenderBytes()
+	}
+
+	if err != nil {
+		return err
+	} else {
+		c.Ctx.ResponseWriter.Header().Set("Content-Type", "text/html; charset=utf-8")
+		output_writer := c.Ctx.ResponseWriter.(io.Writer)
+		if EnableGzip == true && c.Ctx.Request.Header.Get("Accept-Encoding") != "" {
+			splitted := strings.SplitN(c.Ctx.Request.Header.Get("Accept-Encoding"), ",", -1)
+			encodings := make([]string, len(splitted))
+
+			for i, val := range splitted {
+				encodings[i] = strings.TrimSpace(val)
+			}
+			for _, val := range encodings {
+				if val == "gzip" {
+					c.Ctx.ResponseWriter.Header().Set("Content-Encoding", "gzip")
+					output_writer, _ = gzip.NewWriterLevel(c.Ctx.ResponseWriter, gzip.BestSpeed)
+
+					break
+				} else if val == "deflate" {
+					c.Ctx.ResponseWriter.Header().Set("Content-Encoding", "deflate")
+					output_writer, _ = zlib.NewWriterLevel(c.Ctx.ResponseWriter, zlib.BestSpeed)
+					break
+				}
+			}
+		} else {
+			c.Ctx.SetHeader("Content-Length", strconv.Itoa(len(rb)), true)
+		}
+		output_writer.Write(rb)
+		switch output_writer.(type) {
+		case *gzip.Writer:
+			output_writer.(*gzip.Writer).Close()
+		case *zlib.Writer:
+			output_writer.(*zlib.Writer).Close()
+		case io.WriteCloser:
+			output_writer.(io.WriteCloser).Close()
+		}
 		return nil
 	}
 	return nil
@@ -195,6 +278,21 @@ func (c *Handler) GetBool(key string) (bool, error) {
 
 func (c *Handler) GetFile(key string) (multipart.File, *multipart.FileHeader, error) {
 	return c.Ctx.Request.FormFile(key)
+}
+
+func (c *Handler) SaveToFile(fromfile, tofile string) error {
+	file, _, err := c.Ctx.Request.FormFile(fromfile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	f, err := os.OpenFile(tofile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	io.Copy(f, file)
+	return nil
 }
 
 func (c *Handler) StartSession() (sess session.SessionStore) {

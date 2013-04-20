@@ -1,6 +1,7 @@
 package torgo
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -10,9 +11,9 @@ import (
 )
 
 type handlerInfo struct {
-	pattern        string
-	regex          *regexp.Regexp
-	params         map[int]string
+	pattern     string
+	regex       *regexp.Regexp
+	params      map[int]string
 	handlerType reflect.Type
 }
 
@@ -43,18 +44,18 @@ func (p *HandlerRegistor) Add(pattern string, c HandlerInterface) {
 		if strings.HasPrefix(part, ":") {
 			expr := "(.+)"
 			//a user may choose to override the defult expression
-			// similar to expressjs: ‘/user/:id([0-9]+)’ 
+			// similar to expressjs: ‘/user/:id([0-9]+)’
 			if index := strings.Index(part, "("); index != -1 {
 				expr = part[index:]
 				part = part[:index]
 				//match /user/:id:int ([0-9]+)
-				//match /post/:username:word	([\w]+)
+				//match /post/:username:string	([\w]+)
 			} else if lindex := strings.LastIndex(part, ":"); lindex != 0 {
 				switch part[lindex:] {
 				case ":int":
 					expr = "([0-9]+)"
 					part = part[:lindex]
-				case ":word":
+				case ":string":
 					expr = `([\w]+)`
 					part = part[:lindex]
 				}
@@ -117,7 +118,7 @@ func (p *HandlerRegistor) AddHandler(pattern string, c http.Handler) {
 		if strings.HasPrefix(part, ":") {
 			expr := "([^/]+)"
 			//a user may choose to override the defult expression
-			// similar to expressjs: ‘/user/:id([0-9]+)’ 
+			// similar to expressjs: ‘/user/:id([0-9]+)’
 			if index := strings.Index(part, "("); index != -1 {
 				expr = part[index:]
 				part = part[:index]
@@ -190,13 +191,20 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				// go back to panic
 				panic(err)
 			} else {
+				var stack string
 				Critical("Handler crashed with error", err)
-				for i := 1; ; i += 1 {
+				for i := 1; ; i++ {
 					_, file, line, ok := runtime.Caller(i)
 					if !ok {
 						break
 					}
 					Critical(file, line)
+					if RunMode == "dev" {
+						stack = stack + fmt.Sprintln(file, line)
+					}
+				}
+				if RunMode == "dev" {
+					ShowErr(err, rw, r, stack)
 				}
 			}
 		}
@@ -362,9 +370,18 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				method.Call(in)
 			}
 			if !w.started {
-				if AutoRender {
-					method = vc.MethodByName("Render")
+				if !w.started {
+					method = vc.MethodByName("RenderBefore")
 					method.Call(in)
+				}
+				if !w.started {
+					//讓使用RenderPlus 的時候設置 AutoRender 失效
+					if !RenderPlus {
+						if AutoRender {
+							method = vc.MethodByName("Render")
+							method.Call(in)
+						}
+					}
 				}
 				if !w.started {
 					method = vc.MethodByName("Finish")
