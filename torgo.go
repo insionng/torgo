@@ -55,6 +55,7 @@ func init() {
 		//Trace("open Config err:", err)
 		HttpAddr = ""
 		HttpPort = 80
+		Maxprocs = -1
 		AppName = "torgo"
 		RunMode = "dev" //default runmod
 		AutoRender = false
@@ -76,6 +77,11 @@ func init() {
 			HttpPort = 80
 		} else {
 			HttpPort = v
+		}
+		if v, err := AppConfig.Int("maxprocs"); err != nil {
+			Maxprocs = -1
+		} else {
+			Maxprocs = v
 		}
 		if v, err := AppConfig.Int64("maxmemory"); err != nil {
 			MaxMemory = 1 << 26
@@ -275,6 +281,12 @@ func Run() {
 			Warn(err)
 		}
 	}
-	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	if Maxprocs == -1 {
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	} else {
+		runtime.GOMAXPROCS(Maxprocs)
+	}
+
 	TorApp.Run()
 }

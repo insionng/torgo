@@ -375,7 +375,7 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 					method.Call(in)
 				}
 				if !w.started {
-					//讓使用RenderPlus 的時候設置 AutoRender 失效
+					//使用RenderPlus 的時候設置 AutoRender 失效
 					if !RenderPlus {
 						if AutoRender {
 							method = vc.MethodByName("Render")
