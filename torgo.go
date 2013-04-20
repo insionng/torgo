@@ -23,6 +23,7 @@ var (
 	TemplateCache map[string]*template.Template
 	HttpAddr      string
 	HttpPort      int
+	Maxprocs      int
 	RecoverPanic  bool
 	AutoRender    bool
 	RenderPlus    bool
