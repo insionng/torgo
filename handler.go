@@ -91,17 +91,11 @@ func (c *Handler) Options() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
 }
 
-func (c *Handler) Render() error {
-	rb, err := c.RenderBytes()
-
-	return c.RenderCore(rb, err)
+func (c *Handler) Render() (err error) {
+	return c.RenderCore(nil, err)
 }
 
 func (c *Handler) RenderPlus(rb []byte) (err error) {
-	if rb == nil {
-		rb, err = c.RenderBytes()
-	}
-
 	return c.RenderCore(rb, err)
 }
 
