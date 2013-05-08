@@ -13,33 +13,33 @@ import (
 )
 
 var (
-	torgoTplFuncMap template.FuncMap
+	beegoTplFuncMap template.FuncMap
 	BeeTemplates    map[string]*template.Template
 	BeeTemplateExt  []string
 )
 
 func init() {
 	BeeTemplates = make(map[string]*template.Template)
-	torgoTplFuncMap = make(template.FuncMap)
+	beegoTplFuncMap = make(template.FuncMap)
 	BeeTemplateExt = make([]string, 0)
 	BeeTemplateExt = append(BeeTemplateExt, "tpl", "html")
-	torgoTplFuncMap["markdown"] = MarkDown
-	torgoTplFuncMap["dateformat"] = DateFormat
-	torgoTplFuncMap["date"] = Date
-	torgoTplFuncMap["compare"] = Compare
-	torgoTplFuncMap["substr"] = Substr
-	torgoTplFuncMap["html2str"] = Html2str
-	torgoTplFuncMap["str2html"] = Str2html
-	torgoTplFuncMap["htmlquote"] = Htmlquote
-	torgoTplFuncMap["htmlunquote"] = Htmlunquote
+	beegoTplFuncMap["markdown"] = MarkDown
+	beegoTplFuncMap["dateformat"] = DateFormat
+	beegoTplFuncMap["date"] = Date
+	beegoTplFuncMap["compare"] = Compare
+	beegoTplFuncMap["substr"] = Substr
+	beegoTplFuncMap["html2str"] = Html2str
+	beegoTplFuncMap["str2html"] = Str2html
+	beegoTplFuncMap["htmlquote"] = Htmlquote
+	beegoTplFuncMap["htmlunquote"] = Htmlunquote
 }
 
 // AddFuncMap let user to register a func in the template
 func AddFuncMap(key string, funname interface{}) error {
-	if _, ok := torgoTplFuncMap[key]; ok {
+	if _, ok := beegoTplFuncMap[key]; ok {
 		return errors.New("funcmap already has the key")
 	}
-	torgoTplFuncMap[key] = funname
+	beegoTplFuncMap[key] = funname
 	return nil
 }
 
@@ -94,7 +94,7 @@ func AddTemplateExt(ext string) {
 func BuildTemplate(dir string) error {
 	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
-			return err
+			return nil
 		} else {
 			return errors.New("dir open err")
 		}
@@ -111,7 +111,7 @@ func BuildTemplate(dir string) error {
 		return err
 	}
 	for k, v := range self.files {
-		BeeTemplates[k] = template.Must(template.New("torgoTemplate" + k).Funcs(torgoTplFuncMap).ParseFiles(v...))
+		BeeTemplates[k] = template.Must(template.New("beegoTemplate" + k).Funcs(beegoTplFuncMap).ParseFiles(v...))
 	}
 	return nil
 }

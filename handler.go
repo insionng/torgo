@@ -21,12 +21,13 @@ import (
 )
 
 type Handler struct {
-	Ctx       *Context
-	Data      map[interface{}]interface{}
-	ChildName string
-	TplNames  string
-	Layout    string
-	TplExt    string
+	Ctx        *Context
+	Data       map[interface{}]interface{}
+	ChildName  string
+	TplNames   string
+	Layout     string
+	TplExt     string
+	CruSession session.SessionStore
 }
 
 type HandlerInterface interface {
@@ -57,10 +58,14 @@ func (c *Handler) Prepare() {
 
 }
 
-func (c *Handler) RenderBefore() {
+func (c *Handler) Finish() {
+
 }
 
-func (c *Handler) Finish() {
+func (c *Handler) Destructor() {
+	if c.CruSession != nil {
+		c.CruSession.SessionRelease()
+	}
 }
 
 func (c *Handler) Get() {
@@ -169,6 +174,7 @@ func (c *Handler) RenderBytes() ([]byte, error) {
 		BeeTemplates[subdir].ExecuteTemplate(newbytes, file, c.Data)
 		tplcontent, _ := ioutil.ReadAll(newbytes)
 		c.Data["LayoutContent"] = template.HTML(string(tplcontent))
+		subdir = path.Dir(c.Layout)
 		_, file = path.Split(c.Layout)
 		ibytes := bytes.NewBufferString("")
 		err := BeeTemplates[subdir].ExecuteTemplate(ibytes, file, c.Data)
@@ -203,6 +209,10 @@ func (c *Handler) RenderBytes() ([]byte, error) {
 
 func (c *Handler) Redirect(url string, code int) {
 	c.Ctx.Redirect(code, url)
+}
+
+func (c *Handler) Abort(code string) {
+	panic(code)
 }
 
 func (c *Handler) ServeJson() {
@@ -268,25 +278,30 @@ func (c *Handler) SaveToFile(fromfile, tofile string) error {
 	return nil
 }
 
-func (c *Handler) StartSession() (sess session.SessionStore) {
-	sess = GlobalSessions.SessionStart(c.Ctx.ResponseWriter, c.Ctx.Request)
-	return
+func (c *Handler) StartSession() session.SessionStore {
+	if c.CruSession == nil {
+		c.CruSession = GlobalSessions.SessionStart(c.Ctx.ResponseWriter, c.Ctx.Request)
+	}
+	return c.CruSession
 }
 
 func (c *Handler) SetSession(name string, value interface{}) {
-	ss := c.StartSession()
-	defer ss.SessionRelease()
-	ss.Set(name, value)
+	if c.CruSession == nil {
+		c.StartSession()
+	}
+	c.CruSession.Set(name, value)
 }
 
 func (c *Handler) GetSession(name string) interface{} {
-	ss := c.StartSession()
-	defer ss.SessionRelease()
-	return ss.Get(name)
+	if c.CruSession == nil {
+		c.StartSession()
+	}
+	return c.CruSession.Get(name)
 }
 
 func (c *Handler) DelSession(name string) {
-	ss := c.StartSession()
-	defer ss.SessionRelease()
-	ss.Delete(name)
+	if c.CruSession == nil {
+		c.StartSession()
+	}
+	c.CruSession.Delete(name)
 }

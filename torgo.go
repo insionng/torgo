@@ -2,7 +2,7 @@ package torgo
 
 import (
 	"fmt"
-	"github.com/insionng/torgo/session"
+	"github.com/astaxie/beego/session"
 	"html/template"
 	"net"
 	"net/http"
@@ -10,155 +10,66 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 )
 
-const VERSION = "0.8.6"
+const VERSION = "0.9.0"
 
 var (
-	TorApp        *App
+	BeeApp        *App
 	AppName       string
 	AppPath       string
+	AppConfigPath string
 	StaticDir     map[string]string
 	TemplateCache map[string]*template.Template
 	HttpAddr      string
 	HttpPort      int
 	Maxprocs      int
+	RenderPlus    bool
 	RecoverPanic  bool
 	AutoRender    bool
-	RenderPlus    bool
 	PprofOn       bool
 	ViewsPath     string
 	RunMode       string //"dev" or "prod"
 	AppConfig     *Config
 	//related to session
-	SessionOn            bool   // wheather auto start session,default is false
-	SessionProvider      string // default session provider  memory mysql redis
-	SessionName          string // sessionName cookie's name
-	SessionGCMaxLifetime int64  // session's gc maxlifetime
-	SessionSavePath      string // session savepath if use mysql/redis/file this set to the connectinfo
+	GlobalSessions       *session.Manager //GlobalSessions
+	SessionOn            bool             // wheather auto start session,default is false
+	SessionProvider      string           // default session provider  memory mysql redis
+	SessionName          string           // sessionName cookie's name
+	SessionGCMaxLifetime int64            // session's gc maxlifetime
+	SessionSavePath      string           // session savepath if use mysql/redis/file this set to the connectinfo
 	UseFcgi              bool
 	MaxMemory            int64
 	EnableGzip           bool // enable gzip
-
-	GlobalSessions *session.Manager //GlobalSessions
 )
 
 func init() {
 	os.Chdir(path.Dir(os.Args[0]))
-	TorApp = NewApp()
+	BeeApp = NewApp()
 	AppPath, _ = os.Getwd()
 	StaticDir = make(map[string]string)
 	TemplateCache = make(map[string]*template.Template)
-	var err error
-	AppConfig, err = LoadConfig(path.Join(AppPath, "conf", "app.conf"))
-	if err != nil {
-		//Trace("open Config err:", err)
-		HttpAddr = ""
-		HttpPort = 80
-		Maxprocs = -1
-		AppName = "torgo"
-		RunMode = "dev" //default runmod
-		AutoRender = false
-		RenderPlus = false
-		RecoverPanic = true
-		PprofOn = false
-		ViewsPath = "views"
-		SessionOn = false
-		SessionProvider = "memory"
-		SessionName = "TorgoSessionId"
-		SessionGCMaxLifetime = 3600
-		SessionSavePath = ""
-		UseFcgi = false
-		MaxMemory = 1 << 26 //64MB
-		EnableGzip = false
-	} else {
-		HttpAddr = AppConfig.String("httpaddr")
-		if v, err := AppConfig.Int("httpport"); err != nil {
-			HttpPort = 80
-		} else {
-			HttpPort = v
-		}
-		if v, err := AppConfig.Int("maxprocs"); err != nil {
-			Maxprocs = -1
-		} else {
-			Maxprocs = v
-		}
-		if v, err := AppConfig.Int64("maxmemory"); err != nil {
-			MaxMemory = 1 << 26
-		} else {
-			MaxMemory = v
-		}
-		AppName = AppConfig.String("appname")
-		if runmode := AppConfig.String("runmode"); runmode != "" {
-			RunMode = runmode
-		} else {
-			RunMode = "dev"
-		}
-		if ar, err := AppConfig.Bool("renderplus"); err != nil {
-			RenderPlus = false
-		} else {
-			RenderPlus = ar
-		}
-		if ar, err := AppConfig.Bool("autorender"); err != nil {
-			AutoRender = false
-		} else {
-			AutoRender = ar
-		}
-		if ar, err := AppConfig.Bool("autorecover"); err != nil {
-			RecoverPanic = true
-		} else {
-			RecoverPanic = ar
-		}
-		if ar, err := AppConfig.Bool("pprofon"); err != nil {
-			PprofOn = false
-		} else {
-			PprofOn = ar
-		}
-		if views := AppConfig.String("viewspath"); views == "" {
-			ViewsPath = "views"
-		} else {
-			ViewsPath = views
-		}
-		if ar, err := AppConfig.Bool("sessionon"); err != nil {
-			SessionOn = false
-		} else {
-			SessionOn = ar
-		}
-		if ar := AppConfig.String("sessionprovider"); ar == "" {
-			SessionProvider = "memory"
-		} else {
-			SessionProvider = ar
-		}
-		if ar := AppConfig.String("sessionname"); ar == "" {
-			SessionName = "TorgoSessionId"
-		} else {
-			SessionName = ar
-		}
-		if ar := AppConfig.String("sessionsavepath"); ar == "" {
-			SessionSavePath = ""
-		} else {
-			SessionSavePath = ar
-		}
-		if ar, err := AppConfig.Int("sessiongcmaxlifetime"); err == nil && ar != 0 {
-			int64val, _ := strconv.ParseInt(strconv.Itoa(ar), 10, 64)
-			SessionGCMaxLifetime = int64val
-		} else {
-			SessionGCMaxLifetime = 3600
-		}
-		if ar, err := AppConfig.Bool("usefcgi"); err != nil {
-			UseFcgi = false
-		} else {
-			UseFcgi = ar
-		}
-		if ar, err := AppConfig.Bool("enablegzip"); err != nil {
-			EnableGzip = false
-		} else {
-			EnableGzip = ar
-		}
-	}
+	HttpAddr = ""
+	HttpPort = 80
+	Maxprocs = -1
+	AppName = "torgo"
+	RunMode = "dev" //default runmod
+	AutoRender = true
+	RenderPlus = false
+	RecoverPanic = true
+	PprofOn = false
+	ViewsPath = "views"
+	SessionOn = false
+	SessionProvider = "memory"
+	SessionName = "torgosession"
+	SessionGCMaxLifetime = 3600
+	SessionSavePath = ""
+	UseFcgi = false
+	MaxMemory = 1 << 26 //64MB
+	EnableGzip = false
 	StaticDir["/static"] = "static"
-
+	AppConfigPath = path.Join(AppPath, "conf", "app.conf")
+	ParseConfig()
 }
 
 type App struct {
@@ -227,50 +138,63 @@ func (app *App) AccessLog(ctx *Context) {
 	BeeLogger.Printf("[ACC] host: '%s', request: '%s %s', proto: '%s', ua: '%s', remote: '%s'\n", ctx.Request.Host, ctx.Request.Method, ctx.Request.URL.Path, ctx.Request.Proto, ctx.Request.UserAgent(), ctx.Request.RemoteAddr)
 }
 
-func Route(path string, c HandlerInterface) *App {
-	TorApp.Router(path, c)
-	return TorApp
+func RegisterController(path string, c HandlerInterface) *App {
+	BeeApp.Router(path, c)
+	return BeeApp
 }
 
 func Router(path string, c HandlerInterface) *App {
-	TorApp.Router(path, c)
-	return TorApp
+	BeeApp.Router(path, c)
+	return BeeApp
 }
 
 func RouterHandler(path string, c http.Handler) *App {
-	TorApp.Handlers.AddHandler(path, c)
-	return TorApp
+	BeeApp.Handlers.AddHandler(path, c)
+	return BeeApp
+}
+
+func Errorhandler(err string, h http.HandlerFunc) *App {
+	ErrorMaps[err] = h
+	return BeeApp
 }
 
 func SetViewsPath(path string) *App {
-	TorApp.SetViewsPath(path)
-	return TorApp
+	BeeApp.SetViewsPath(path)
+	return BeeApp
 }
 
 func SetStaticPath(url string, path string) *App {
 	StaticDir[url] = path
-	return TorApp
+	return BeeApp
 }
 
 func Filter(filter http.HandlerFunc) *App {
-	TorApp.Filter(filter)
-	return TorApp
+	BeeApp.Filter(filter)
+	return BeeApp
 }
 
 func FilterParam(param string, filter http.HandlerFunc) *App {
-	TorApp.FilterParam(param, filter)
-	return TorApp
+	BeeApp.FilterParam(param, filter)
+	return BeeApp
 }
 
 func FilterPrefixPath(path string, filter http.HandlerFunc) *App {
-	TorApp.FilterPrefixPath(path, filter)
-	return TorApp
+	BeeApp.FilterPrefixPath(path, filter)
+	return BeeApp
 }
 
 func Run() {
+	if AppConfigPath != path.Join(AppPath, "conf", "app.conf") {
+		err := ParseConfig()
+		if err != nil {
+			if RunMode == "dev" {
+				Warn(err)
+			}
+		}
+	}
 	if PprofOn {
-		TorApp.Router(`/debug/pprof`, &ProfHandler{})
-		TorApp.Router(`/debug/pprof/:pp([\w]+)`, &ProfHandler{})
+		BeeApp.Router(`/debug/pprof`, &ProfController{})
+		BeeApp.Router(`/debug/pprof/:pp([\w]+)`, &ProfController{})
 	}
 	if SessionOn {
 		GlobalSessions, _ = session.NewManager(SessionProvider, SessionName, SessionGCMaxLifetime, SessionSavePath)
@@ -289,5 +213,6 @@ func Run() {
 		runtime.GOMAXPROCS(Maxprocs)
 	}
 
-	TorApp.Run()
+	registerErrorHander()
+	BeeApp.Run()
 }

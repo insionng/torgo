@@ -4,11 +4,11 @@ import (
 	"net/http/pprof"
 )
 
-type ProfHandler struct {
+type ProfController struct {
 	Handler
 }
 
-func (this *ProfHandler) Get() {
+func (this *ProfController) Get() {
 	switch this.Ctx.Params[":pp"] {
 	default:
 		pprof.Index(this.Ctx.ResponseWriter, this.Ctx.Request)

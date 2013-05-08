@@ -5,7 +5,7 @@ sessionmanager is a golang session manager. It can use session for many provider
 
 ##How to install
 
-	go get github.com/insionng/torgo/session
+	go get github.com/astaxie/beego/session
 
 
 ##how many providers support
@@ -19,7 +19,7 @@ first you must import it
 
 
 	import (
-		"github.com/insionng/torgo/session"
+		"github.com/astaxie/beego/session"
 	)
 
 then in you web app init the globalsession manager

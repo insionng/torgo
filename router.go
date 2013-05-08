@@ -187,24 +187,29 @@ func (p *HandlerRegistor) FilterPrefixPath(path string, filter http.HandlerFunc)
 func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
-			if !RecoverPanic {
-				// go back to panic
-				panic(err)
+			errstr := fmt.Sprint(err)
+			if handler, ok := ErrorMaps[errstr]; ok {
+				handler(rw, r)
 			} else {
-				var stack string
-				Critical("Handler crashed with error", err)
-				for i := 1; ; i++ {
-					_, file, line, ok := runtime.Caller(i)
-					if !ok {
-						break
+				if !RecoverPanic {
+					// go back to panic
+					panic(err)
+				} else {
+					var stack string
+					Critical("Handler crashed with error", err)
+					for i := 1; ; i++ {
+						_, file, line, ok := runtime.Caller(i)
+						if !ok {
+							break
+						}
+						Critical(file, line)
+						if RunMode == "dev" {
+							stack = stack + fmt.Sprintln(file, line)
+						}
 					}
-					Critical(file, line)
 					if RunMode == "dev" {
-						stack = stack + fmt.Sprintln(file, line)
+						ShowErr(err, rw, r, stack)
 					}
-				}
-				if RunMode == "dev" {
-					ShowErr(err, rw, r, stack)
 				}
 			}
 		}
@@ -227,6 +232,7 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	requestPath := r.URL.Path
+	r.ParseMultipartForm(MaxMemory)
 
 	//user defined Handler
 	for pattern, c := range p.userHandlers {
@@ -255,6 +261,7 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			values := r.URL.Query()
 			for i, match := range matches[1:] {
 				values.Add(c.params[i], match)
+				r.Form.Add(c.params[i], match)
 				params[c.params[i]] = match
 			}
 			//reassemble query params and add to RawQuery
@@ -309,6 +316,7 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				values := r.URL.Query()
 				for i, match := range matches[1:] {
 					values.Add(route.params[i], match)
+					r.Form.Add(route.params[i], match)
 					params[route.params[i]] = match
 				}
 				//reassemble query params and add to RawQuery
@@ -350,17 +358,17 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if r.Method == "GET" {
 				method = vc.MethodByName("Get")
 				method.Call(in)
-			} else if r.Method == "POST" {
-				method = vc.MethodByName("Post")
-				method.Call(in)
 			} else if r.Method == "HEAD" {
 				method = vc.MethodByName("Head")
 				method.Call(in)
-			} else if r.Method == "DELETE" {
+			} else if r.Method == "DELETE" || (r.Method == "POST" && r.Form.Get("_method") == "delete") {
 				method = vc.MethodByName("Delete")
 				method.Call(in)
-			} else if r.Method == "PUT" {
+			} else if r.Method == "PUT" || (r.Method == "POST" && r.Form.Get("_method") == "put") {
 				method = vc.MethodByName("Put")
+				method.Call(in)
+			} else if r.Method == "POST" {
+				method = vc.MethodByName("Post")
 				method.Call(in)
 			} else if r.Method == "PATCH" {
 				method = vc.MethodByName("Patch")
@@ -370,10 +378,6 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				method.Call(in)
 			}
 			if !w.started {
-				if !w.started {
-					method = vc.MethodByName("RenderBefore")
-					method.Call(in)
-				}
 				if !w.started {
 					//使用RenderPlus 的時候設置 AutoRender 失效
 					if !RenderPlus {
@@ -389,11 +393,17 @@ func (p *HandlerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		method = vc.MethodByName("Destructor")
+		method.Call(in)
 	}
 
 	//if no matches to url, throw a not found exception
 	if w.started == false {
-		http.NotFound(w, r)
+		if h, ok := ErrorMaps["404"]; ok {
+			h(w, r)
+		} else {
+			http.NotFound(w, r)
+		}
 	}
 }
 

@@ -1,6 +1,7 @@
-package torgo
+package cache
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -12,32 +13,31 @@ var (
 	DefaultEvery int = 60 // 1 minute
 )
 
-type BeeItem struct {
+type MemoryItem struct {
 	val        interface{}
 	Lastaccess time.Time
 	expired    int
 }
 
-func (itm *BeeItem) Access() interface{} {
+func (itm *MemoryItem) Access() interface{} {
 	itm.Lastaccess = time.Now()
 	return itm.val
 }
 
-type BeeCache struct {
+type MemoryCache struct {
 	lock  sync.RWMutex
 	dur   time.Duration
-	items map[string]*BeeItem
+	items map[string]*MemoryItem
 	Every int // Run an expiration check Every seconds
 }
 
 // NewDefaultCache returns a new FileCache with sane defaults.
-func NewBeeCache() *BeeCache {
-	cache := BeeCache{dur: time.Since(time.Now()),
-		Every: DefaultEvery}
+func NewMemoryCache() *MemoryCache {
+	cache := MemoryCache{items: make(map[string]*MemoryItem)}
 	return &cache
 }
 
-func (bc *BeeCache) Get(name string) interface{} {
+func (bc *MemoryCache) Get(name string) interface{} {
 	bc.lock.RLock()
 	defer bc.lock.RUnlock()
 	itm, ok := bc.items[name]
@@ -47,10 +47,10 @@ func (bc *BeeCache) Get(name string) interface{} {
 	return itm.Access()
 }
 
-func (bc *BeeCache) Put(name string, value interface{}, expired int) error {
+func (bc *MemoryCache) Put(name string, value interface{}, expired int) error {
 	bc.lock.Lock()
 	defer bc.lock.Unlock()
-	t := BeeItem{val: value, Lastaccess: time.Now(), expired: expired}
+	t := MemoryItem{val: value, Lastaccess: time.Now(), expired: expired}
 	if _, ok := bc.items[name]; ok {
 		return errors.New("the key is exist")
 	} else {
@@ -59,45 +59,58 @@ func (bc *BeeCache) Put(name string, value interface{}, expired int) error {
 	return nil
 }
 
-func (bc *BeeCache) Delete(name string) (ok bool, err error) {
+func (bc *MemoryCache) Delete(name string) error {
 	bc.lock.Lock()
 	defer bc.lock.Unlock()
-	if _, ok = bc.items[name]; !ok {
-		return
+	if _, ok := bc.items[name]; !ok {
+		return errors.New("key not exist")
 	}
 	delete(bc.items, name)
 	_, valid := bc.items[name]
 	if valid {
-		ok = false
+		return errors.New("delete key error")
 	}
-	return
+	return nil
 }
 
-func (bc *BeeCache) IsExist(name string) bool {
+func (bc *MemoryCache) IsExist(name string) bool {
 	bc.lock.RLock()
 	defer bc.lock.RUnlock()
 	_, ok := bc.items[name]
 	return ok
 }
 
-// Start activates the file cache; it will
-func (bc *BeeCache) Start() error {
-	dur, err := time.ParseDuration(fmt.Sprintf("%ds", bc.Every))
+func (bc *MemoryCache) ClearAll() error {
+	bc.lock.Lock()
+	defer bc.lock.Unlock()
+	bc.items = make(map[string]*MemoryItem)
+	return nil
+}
+
+// Start activates the file cache; it will 
+func (bc *MemoryCache) StartAndGC(config string) error {
+	var cf map[string]int
+	json.Unmarshal([]byte(config), &cf)
+	if _, ok := cf["every"]; !ok {
+		cf = make(map[string]int)
+		cf["interval"] = DefaultEvery
+	}
+	dur, err := time.ParseDuration(fmt.Sprintf("%ds", cf["interval"]))
 	if err != nil {
 		return err
 	}
+	bc.Every = cf["interval"]
 	bc.dur = dur
-	bc.items = make(map[string]*BeeItem, 0)
 	go bc.vaccuum()
 	return nil
 }
 
-func (bc *BeeCache) vaccuum() {
+func (bc *MemoryCache) vaccuum() {
 	if bc.Every < 1 {
 		return
 	}
 	for {
-		<-time.After(time.Duration(bc.dur))
+		<-time.After(time.Duration(bc.dur) * time.Second)
 		if bc.items == nil {
 			return
 		}
@@ -108,7 +121,7 @@ func (bc *BeeCache) vaccuum() {
 }
 
 // item_expired returns true if an item is expired.
-func (bc *BeeCache) item_expired(name string) bool {
+func (bc *MemoryCache) item_expired(name string) bool {
 	bc.lock.Lock()
 	defer bc.lock.Unlock()
 	itm, ok := bc.items[name]
@@ -125,4 +138,8 @@ func (bc *BeeCache) item_expired(name string) bool {
 		return true
 	}
 	return false
+}
+
+func init() {
+	Register("memory", NewMemoryCache())
 }
