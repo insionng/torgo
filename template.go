@@ -1,7 +1,5 @@
 package torgo
 
-//@todo add template funcs
-
 import (
 	"errors"
 	"fmt"

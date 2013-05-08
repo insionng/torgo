@@ -2,7 +2,7 @@ package torgo
 
 import (
 	"fmt"
-	"github.com/astaxie/beego/session"
+	"github.com/insionng/torgo/session"
 	"html/template"
 	"net"
 	"net/http"
