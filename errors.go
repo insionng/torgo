@@ -12,7 +12,7 @@ var tpl = `
 <html> 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>beego application error</title>
+    <title>{{ .BeegoVersion }}  application error</title>
     <style>
         html, body, body * {padding: 0; margin: 0;}
         #header {background:#ffd; border-bottom:solid 2px #A31515; padding: 20px 10px;}
@@ -49,7 +49,7 @@ var tpl = `
         </div>
     </div>
     <div id="footer">
-        <p>beego {{ .BeegoVersion }} (beego framework)</p>
+        <p>{{ .BeegoVersion }} (torgo framework)</p>
         <p>golang version: {{.GoVersion}}</p>
     </div>
 </body>
@@ -64,7 +64,7 @@ func ShowErr(err interface{}, rw http.ResponseWriter, r *http.Request, Stack str
 	data["RequestURL"] = r.RequestURI
 	data["RemoteAddr"] = r.RemoteAddr
 	data["Stack"] = Stack
-	data["BeegoVersion"] = VERSION
+	data["BeegoVersion"] = AppName + " " + VERSION
 	data["GoVersion"] = runtime.Version()
 	t.Execute(rw, data)
 }
@@ -161,7 +161,7 @@ var errtpl = `
 					{{.Content}}
 					<a href="/" title="Home" class="button">Go Home</a><br />
 
-					<br>power by beego {{.BeegoVersion}}
+					<br>power by {{.BeegoVersion}}
 				</div>
 			</div>
 		</div>
