@@ -12,7 +12,7 @@ var tpl = `
 <html> 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <title>{{ .BeegoVersion }}  application error</title>
+    <title>torgo application error</title>
     <style>
         html, body, body * {padding: 0; margin: 0;}
         #header {background:#ffd; border-bottom:solid 2px #A31515; padding: 20px 10px;}
@@ -49,7 +49,7 @@ var tpl = `
         </div>
     </div>
     <div id="footer">
-        <p>{{ .BeegoVersion }} (torgo framework)</p>
+        <p>torgo {{ .TorgoVersion }} (torgo framework)</p>
         <p>golang version: {{.GoVersion}}</p>
     </div>
 </body>
@@ -57,14 +57,14 @@ var tpl = `
 `
 
 func ShowErr(err interface{}, rw http.ResponseWriter, r *http.Request, Stack string) {
-	t, _ := template.New("beegoerrortemp").Parse(tpl)
+	t, _ := template.New("torgoerrortemp").Parse(tpl)
 	data := make(map[string]string)
 	data["AppError"] = AppName + ":" + fmt.Sprint(err)
 	data["RequestMethod"] = r.Method
 	data["RequestURL"] = r.RequestURI
 	data["RemoteAddr"] = r.RemoteAddr
 	data["Stack"] = Stack
-	data["BeegoVersion"] = AppName + " " + VERSION
+	data["TorgoVersion"] = VERSION
 	data["GoVersion"] = runtime.Version()
 	t.Execute(rw, data)
 }
@@ -161,7 +161,7 @@ var errtpl = `
 					{{.Content}}
 					<a href="/" title="Home" class="button">Go Home</a><br />
 
-					<br>power by {{.BeegoVersion}}
+					<br>power by torgo {{.TorgoVersion}}
 				</div>
 			</div>
 		</div>
@@ -177,7 +177,7 @@ func init() {
 
 //404
 func NotFound(rw http.ResponseWriter, r *http.Request) {
-	t, _ := template.New("beegoerrortemp").Parse(errtpl)
+	t, _ := template.New("torgoerrortemp").Parse(errtpl)
 	data := make(map[string]interface{})
 	data["Title"] = "Page Not Found"
 	data["Content"] = template.HTML("<br>The Page You have requested flown the coop." +
@@ -188,13 +188,13 @@ func NotFound(rw http.ResponseWriter, r *http.Request) {
 		"<br>You were looking for your puppy and got lost" +
 		"<br>You like 404 pages" +
 		"</ul>")
-	data["BeegoVersion"] = VERSION
+	data["TorgoVersion"] = VERSION
 	t.Execute(rw, data)
 }
 
 //401
 func Unauthorized(rw http.ResponseWriter, r *http.Request) {
-	t, _ := template.New("beegoerrortemp").Parse(errtpl)
+	t, _ := template.New("torgoerrortemp").Parse(errtpl)
 	data := make(map[string]interface{})
 	data["Title"] = "Unauthorized"
 	data["Content"] = template.HTML("<br>The Page You have requested can't authorized." +
@@ -203,13 +203,13 @@ func Unauthorized(rw http.ResponseWriter, r *http.Request) {
 		"<br>Check the credentials that you supplied" +
 		"<br>Check the address for errors" +
 		"</ul>")
-	data["BeegoVersion"] = VERSION
+	data["TorgoVersion"] = VERSION
 	t.Execute(rw, data)
 }
 
 //403
 func Forbidden(rw http.ResponseWriter, r *http.Request) {
-	t, _ := template.New("beegoerrortemp").Parse(errtpl)
+	t, _ := template.New("torgoerrortemp").Parse(errtpl)
 	data := make(map[string]interface{})
 	data["Title"] = "Forbidden"
 	data["Content"] = template.HTML("<br>The Page You have requested forbidden." +
@@ -219,13 +219,13 @@ func Forbidden(rw http.ResponseWriter, r *http.Request) {
 		"<br>The site may be disabled" +
 		"<br>You need to log in" +
 		"</ul>")
-	data["BeegoVersion"] = VERSION
+	data["TorgoVersion"] = VERSION
 	t.Execute(rw, data)
 }
 
 //503
 func ServiceUnavailable(rw http.ResponseWriter, r *http.Request) {
-	t, _ := template.New("beegoerrortemp").Parse(errtpl)
+	t, _ := template.New("torgoerrortemp").Parse(errtpl)
 	data := make(map[string]interface{})
 	data["Title"] = "Service Unavailable"
 	data["Content"] = template.HTML("<br>The Page You have requested unavailable." +
@@ -234,13 +234,13 @@ func ServiceUnavailable(rw http.ResponseWriter, r *http.Request) {
 		"<br><br>The page is overloaded" +
 		"<br>Please try again later." +
 		"</ul>")
-	data["BeegoVersion"] = VERSION
+	data["TorgoVersion"] = VERSION
 	t.Execute(rw, data)
 }
 
 //500
 func InternalServerError(rw http.ResponseWriter, r *http.Request) {
-	t, _ := template.New("beegoerrortemp").Parse(errtpl)
+	t, _ := template.New("torgoerrortemp").Parse(errtpl)
 	data := make(map[string]interface{})
 	data["Title"] = "Internal Server Error"
 	data["Content"] = template.HTML("<br>The Page You have requested has down now." +
@@ -248,7 +248,7 @@ func InternalServerError(rw http.ResponseWriter, r *http.Request) {
 		"<br>simply try again later" +
 		"<br>you should report the fault to the website administrator" +
 		"</ul>")
-	data["BeegoVersion"] = VERSION
+	data["TorgoVersion"] = VERSION
 	t.Execute(rw, data)
 }
 
