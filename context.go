@@ -58,7 +58,7 @@ func (ctx *Context) SetHeader(hdr string, val string, unique bool) {
 }
 
 //Sets a cookie -- duration is the amount of time in seconds. 0 = forever
-func (ctx *Context) SetCookie(name string, value string, age int64) {
+func (ctx *Context) SetCookie(name string, value string, domain string, path string, age int64) {
 	var utctime time.Time
 	if age == 0 {
 		// 2^31 - 1 seconds (roughly 2038)
@@ -66,6 +66,18 @@ func (ctx *Context) SetCookie(name string, value string, age int64) {
 	} else {
 		utctime = time.Unix(time.Now().Unix()+age, 0)
 	}
-	cookie := fmt.Sprintf("%s=%s; Expires=%s; Path=/", name, value, webTime(utctime))
+	cookie := ""
+	if name != "" {
+		cookie = cookie + fmt.Sprintf("%s=%s; Expires=%s; ", name, value, webTime(utctime))
+	}
+	if domain != "" {
+		cookie = cookie + fmt.Sprintf("Domain=%s; ", domain)
+	}
+	if path != "" {
+		cookie = cookie + fmt.Sprintf("Path=%s", path)
+	} else {
+		cookie = cookie + "Path=/"
+	}
+
 	ctx.SetHeader("Set-Cookie", cookie, true)
 }
